@@ -1,0 +1,29 @@
+GIT Cheat Sheet
+
+Try this to get started with:
+
+1.	Log into https://gitlab.eng.vmware.com/ with your vmware account
+2.	Create an SSH key
+a.	Top right profile icon  Settings  SSH Keys
+b.	Create an rsa key and copy .pub to the gitlab
+3.	Go to https://gitlab.eng.vmware.com/atauber/tam-modern-apps
+4.	Copy the Clone command for SSH
+5.	Go to the command line and create a holding directory, cd to it
+6.	Command: “git clone <copied clone string>”
+
+
+From here, you add/edit files in the directory.
+
+Common git commands (must be in the git directory to issue):
+
+Synch up with what is at gitlab.eng.vmware.com: git pull
+List which branch you are currently in: git branch
+Switch branch (currently we only have master but we can create more): git checkout <branch>
+
+Push your local content to gitlab.eng.vmware.com:
+                Mark files to add (mind the dot): git add .
+                Add comment for commit: git commit -m “comment here”
+                Push updates: git push
+You should now see updated content in browser.
+
+There also is the concept of merging code for multiple users.  You could create a new branch – say “dev” – in the UI.  Switch to that branch locally and make edits and push up.  Then in UI, you can merge those changes from dev to master.
