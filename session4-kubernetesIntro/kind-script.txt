@@ -1,0 +1,11 @@
+#create kind cluster
+kind create cluster --name tamlab --config kind-config.yaml
+
+kind get clusters
+
+kubectl config get-contexts
+kubectl config current-context
+kubectl config set-context kind-tamlab
+kubectl --context kind-tamlab get namespace
+
+kubectl cluster-info --context kind-tamlab

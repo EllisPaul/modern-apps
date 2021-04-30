@@ -1,0 +1,94 @@
+#Create cluster with kind:
+kind create cluster --name tamlab --config kind-config.yaml
+
+#View available clusters
+kind get clusters
+
+#Switch contexts commands
+kubectl config get-contexts
+kubectl config current-context
+kubectl config set-context kind-tamlab
+
+#or set explicitly in kubectl command
+kubectl --context kind-tamlab get namespace
+
+
+#namespaces
+
+#get all namespaces
+kubectl get ns
+
+#get all pods in a namespace
+kubectl -n kube-system get pods
+
+#get all pods / all namespaces
+kubectl get pods --all-namespaces
+
+#create a namespace
+kubectl create ns demo
+
+
+#pods
+
+#deploy a pod in demo namespace
+kubectl -n demo apply -f 01-pod.yaml
+kubectl -n demo get pod
+kubectl -n demo describe pod <pod name>
+
+#Deployment
+kubectl -n demo apply -f 02-deployment.yaml
+kubectl -n demo apply -f 02-service.yaml
+kubectl -n demo get all
+
+#show difference in killing a standalone pod vs one controlled by a deployment
+kubectl -n demo delete <pod name>
+
+#Statefulset
+kubectl -n demo apply -f 03-statefulset.yaml
+kubectl -n demo get all
+
+#Daemonset
+cd logging
+kubectl apply -f fluentd-namespace.yaml
+kubectl -n logging apply -f fluentd-rbac.yaml
+kubectl -n logging apply -f fluentd-configmap.yaml
+kubectl -n logging apply -f fluentd-ds.yaml
+kubectl -n logging apply -f fluentd-ds-svc.yaml
+kubectl -n logging get all
+
+#use describe to show which pods the daemonset pods are on
+
+
+#Debugging
+#What “kinds” are available?
+kubectl api-resources and kubectl api-versions
+
+#Describe the item
+kubectl –n demo describe pod my-webserver
+
+#Show the logs
+kubectl -n demo logs my-webserver nginx
+
+#Port forward the application’s port
+kubectl -n demo port-forward my-webserver 8080:80
+
+#Point browser to http://localhost:8080
+
+#Jump into the command line of a container
+kubectl -n demo exec -it my-webserver -c nginx -- /bin/bash
+
+#Deploy a ubuntu pod for network and curl tests
+kubectl run my-shell -i --tty --image ubuntu -- /bin/bash
+
+#install packages into ubuntu
+apt update, apt install curl, apt install dnsutils, apt install iputils-ping
+
+#Reconnect to my-shell:
+kubectl exec -it my-shell -- /bin/bash
+
+#curl test to demostrate requirement of FQDN across namespace
+curl rss-site:8690
+curl rss-site.demo.svc.cluster.local:8690
+
+#busybox pod install
+kubectl run busybox -i --tty --image busybox -- sh

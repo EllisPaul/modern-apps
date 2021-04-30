@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rss-site
+  labels:
+    app: rss-site
+spec:
+  selector:
+    app: rss-site
+  type: ClusterIP
+  ports:
+    - port: 8690
+      name: web
+      targetPort: 80
