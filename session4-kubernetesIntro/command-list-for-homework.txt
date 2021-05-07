@@ -1,6 +1,5 @@
 #Create cluster with kind:
-kind create cluster --name tamlab --config kind-config.yaml
-
+kind create cluster --name tamlab --config kind-config.yaml  --image kindest/node:v1.20.2
 #View available clusters
 kind get clusters
 
@@ -92,3 +91,5 @@ curl rss-site.demo.svc.cluster.local:8690
 
 #busybox pod install
 kubectl run busybox -i --tty --image busybox -- sh
+
+# https://busybox.net/downloads/BusyBox.html
