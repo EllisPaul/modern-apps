@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: logging
+  labels:
+    k8s-app: fluentd
+data:
+  fluentd.conf: |
+    @include kubernetes.conf
+    @include output.conf
+
+  kubernetes.conf: |
+    <match fluent.**>
+      type null
+    </match>
+
+    # here we read the logs from Docker's containers and parse them
+    <source>
+      @type tail
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      read_from_head true
+      <parse>
+        @type json
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    # we use kubernetes metadata plugin to add metadatas to the log
+    <filter kubernetes.**>
+        @type kubernetes_metadata
+    </filter>
+
+    #example of how to exclude
+    #<match kubernetes.var.log.containers.**kube-system**.log>
+    #  @type null
+    #</match>
+
+    # this adds the namespace name at the begining of the tag
+    <match kubernetes.**>
+      @type rewrite_tag_filter
+      <rule>
+        key $['kubernetes']['namespace_name']
+        pattern ^(.+)$
+        tag $1.${tag}
+      </rule>
+    </match>
+
+  output.conf: |
+    # we send the logs to Elasticsearch
+    <match demo.kubernetes.**>
+        @type elasticsearch
+        include_tag_key true
+        host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+        port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+        scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+        ssl_verify "#{ENV['FLUENT_ELASTICSEARCH_SSL_VERIFY'] || 'true'}"
+        user "#{ENV['FLUENT_ELASTICSEARCH_USER']}" # remove these lines if not needed
+        password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}" # remove these lines if not needed
+        reload_connections true
+        logstash_prefix replace_project-atd-core-platform-replace_cluster
+        logstash_format true
+        <buffer>
+            flush_thread_count 8
+            flush_interval 5s
+            chunk_limit_size 2M
+            queue_limit_length 32
+            retry_max_interval 30
+            retry_forever true
+        </buffer>
+    </match>
+
+    # match the rest of the system data
+    <match {kube-system.kubernetes.**,istio-system.kubernetes.**}>
+        @type elasticsearch
+        include_tag_key true
+        host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+        port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+        scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+        ssl_verify "#{ENV['FLUENT_ELASTICSEARCH_SSL_VERIFY'] || 'true'}"
+        user "#{ENV['FLUENT_ELASTICSEARCH_USER']}" # remove these lines if not needed
+        password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD']}" # remove these lines if not needed
+        reload_connections true
+        logstash_prefix replace_project-k8ops-replace_cluster
+        logstash_format true
+        <buffer>
+            flush_thread_count 8
+            flush_interval 5s
+            chunk_limit_size 2M
+            queue_limit_length 32
+            retry_max_interval 30
+            retry_forever true
+        </buffer>
+    </match>

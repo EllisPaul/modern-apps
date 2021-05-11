@@ -1,0 +1,152 @@
+
+>> kind delete clusters
+kind delete cluster --name tamlab
+
+>> kind get clusters
+
+#Create cluster with kind:
+kind create cluster --name tamlab --config kind-config.yaml
+
+>> kubectl config get-contexts
+
+>> brew install helm
+>> could not get this to work
+#install metrics-server if you have helm installed already - if not, don't worry about this
+helm install ms stable/metrics-server -n kube-system --set=args={--kubelet-insecure-tls}
+
+#View available clusters
+kind get clusters
+
+#Switch contexts commands
+kubectl config get-contexts
+kubectl config current-context
+kubectl config set-context kind-tamlab
+
+#or set explicitly in kubectl command
+kubectl --context kind-tamlab get namespace
+
+#create a namespace
+kubectl create ns demo
+
+
+#demo sidecars
+
+#deploy a pod in demo namespace
+>> you need to modify the version of telegraf from 1.9 to latest!
+kubectl -n demo apply -f 01-pod.yaml
+kubectl -n demo get pod
+#note the two containers
+kubectl -n demo describe pod my-webserver
+#how to get logs for pod with multiple containers
+kubectl -n demo logs my-webserver
+>> note: you will get an error with the previous cmd.  must specify a container
+kubectl -n demo logs my-webserver -c nginx
+kubectl -n demo logs my-webserver -c wavefront
+
+
+#Demo configmap in logging system
+cd logging
+kubectl apply -f fluentd-namespace.yaml
+>> kubectl get namespaces, you should see logging
+kubectl -n logging apply -f fluentd-rbac.yaml
+>> kubectl get clusterrole, look for "fluentd"
+>> kubectl get clusterrolebindings, look for "fluentd"
+kubectl -n logging apply -f fluentd-configmap.yaml
+>> kubectl -n logging get cm
+kubectl -n logging apply -f fluentd-ds.yaml
+>> kubectl -n logging get ds
+>> a daemon set runs a container on every node, you should see (3) instances 
+kubectl -n logging apply -f fluentd-ds-svc.yaml
+
+>> kubectl -n logging get service
+>> note: type is set to clusterip.  there is no external ip.  exposes the service on a cluster-internal ip
+kubectl -n logging get cm
+kubectl -n logging describe cm fluentd-config
+
+#show configmap mounted in Daemonset
+kubectl -n logging get all
+>> kubectl -n logging describe pod fluentd-kssss
+kubectl -n logging exec -it pod/fluentd-<suffix> -- /bin/bash
+ls /etc/kubernetes
+cd /etc/kubernetes/fluentd/
+cat fluentd.conf
+cat kubernetes.conf
+exit
+
+#Demo secrets
+#base64 encode the variables to be used in the secret
+>> cd ..
+echo -n 'atauber' | base64      --> use output for username in 02-secret.yaml
+echo -n 'VMware123!' | base64   --> use output for password in 02-secret.yaml
+
+>> edit the 02-secret.yaml file and enter your encrypted username/pwd
+
+kubectl -n demo apply -f 02-secret.yaml
+kubectl -n demo get secret
+kubectl -n demo describe secret test-secret
+kubectl -n demo apply -f 02-secret-pod.yaml
+kubectl -n demo get pod
+kubectl -n demo exec -it secret-test-pod -- /bin/bash
+#look at mount path /etc/secret-volume
+echo "$( cat /etc/secret-volume/username )"
+echo "$( cat /etc/secret-volume/password )"
+exit
+
+#a more direct way to dump the value of a secret
+kubectl -n demo get secrets/test-secret -o yaml
+kubectl -n demo get secrets/test-secret --template={{.data.password}} | base64 -D
+
+#rbac demo here
+kubectl get clusterroles
+kubectl describe clusterroles admin
+kubectl describe clusterroles cluster-admin
+
+kubectl get clusterrolebinding
+kubectl describe clusterrolebinding system:basic-user
+kubectl describe clusterrolebinding cluster-admin
+
+#Review the logging/fluentd-rbac.yaml file
+#Note the creation of the service account
+#Find the specification of the service account in fluentd-ds.yaml
+
+#persistent storage demo here
+kubectl get storageclass
+
+#static PV Demo
+kubectl apply -f 05-pv.yaml
+kubectl get pv
+#note the "demo-pv-volume" with status=Available
+kubectl apply -f 05-pvc.yaml
+kubectl describe pvc demo-pv-claim
+kubectl apply -f 05-pod.yaml
+kubectl get all,pv,pvc
+#note bound status for pv and pvc
+
+#volumeclaimtemplates Demo
+kubectl apply -f 06-mongo.yaml
+kubectl get all,pv,pvc
+
+
+#resource scheduling
+kubectl -n demo apply -f 03-resource-pod.yaml
+kubectl describe nodes    --> look at resource usage on nodes
+
+#demo excessive memory usage
+#note that this may or may not work right away (OOMKilled) depending on memory pressure in cluster
+#may need to exhaust memory in node
+kubectl -n demo apply -f 03-memory-demo.yaml
+kubectl -n demo top pod memory-demo  (if you have metrics-server installed)
+#run until OOMKilled
+kubectl -n demo get pod memory-demo
+
+
+#Custom Resource Definitions
+kubectl -n demo apply -f 04-crd.yaml
+kubectl api-resources  --> look for crontab
+
+#Node operations
+kubectl get nodes
+kubectl describe node tamlab-worker  --> look at Conditions fields
+kubectl cordon tamlab-worker
+kubectl drain tamlab-worker
+kubectl uncordon tamlab-worker
