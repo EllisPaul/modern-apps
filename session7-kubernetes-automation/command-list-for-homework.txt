@@ -1,0 +1,139 @@
+#Create cluster with kind:
+kind create cluster --name tamlab --config kind-config.yaml
+
+#View available clusters
+kind get clusters
+
+#Switch contexts commands
+kubectl config get-contexts
+kubectl config current-context
+kubectl config use-context kind-tamlab
+
+#or set explicitly in kubectl command
+kubectl --context kind-tamlab
+
+#install helm on a mac
+brew install helm
+
+#help for helm
+helm --help
+
+#version of helm (2 or 3)
+helm version
+
+#Install the stable repo:
+helm repo add stable https://charts.helm.sh/stable
+
+#list all repos that are locally installed
+helm repo list
+
+#list all packages in the stable repo
+helm search repo stable
+
+#install a postgres db
+helm install mydb stable/postgresql
+
+#note the postgres db that was installed
+kubectl get all
+
+#get the postgres password
+hel
+
+#view the postgres encrypted password
+echo $POSTGRES_PASSWORD
+
+-------
+
+#lets try to install the velero server
+http://https://velero.io/docs/v1.6/basic-install/
+
+#scroll down to "Install and configure the server components
+#click on the link for the "Helm chart"
+
+#add the tanzu helm repository
+helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
+
+#follow "For installation and upgrading instructions see Velero chart readme."
+
+--------
+
+#list helm packages that have been installed
+helm list
+
+#uninstall postgres package
+helm uninstall mydb
+
+#show possible values for postgres install
+helm show values stable/postgresql
+
+#show possible values for velero install
+helm show values vmware-tanzu/velero
+
+--------  
+
+#create a helm chart
+helm create mySample
+
+#change directory into mySample
+cd mySample
+
+#install postgres with a input value file
+#create the value file
+helm show values stable/postgresql > myInputFile.yaml
+
+#edit the file and change the service port to 9950
+vi myInputFile.yaml
+#hint:  look under the heading "## PostgreSQL service configuration"
+
+#install with the new value file
+helm install -f myInputFile.yaml mydb stable/postgresql
+
+#look at the port assigned
+kubectl get svc
+
+#cleanup
+helm uninstall mydb
+
+------
+
+#install with command line parameter
+helm install --set service.port=9960 mydb stable/postgresql
+
+#look at the port assigned
+kubectl get svc
+
+#cleanup
+helm uninstall mydb
+
+------
+
+#change directory up one level
+cd ..
+
+#prometheus operator demo
+#git clone the kube-prometheus code locally
+git clone https://github.com/prometheus-operator/kube-prometheus.git
+
+#change directory into kube-prometheus
+cd kube-prometheus
+
+#run a bunch of setup yaml files
+kubectl create -f manifests/setup
+
+#check for new monitoring namespace
+kubectl get ns
+
+#deploy prometheus operator
+kubectl create -f manifests
+
+#see what has been deployed
+kubectl -n monitoring get all
+kubectl -n monitoring get prometheus,alertmanager
+
+#clean up the env
+kubectl delete -f manifests
+kubectl delete deployment prometheus-operator --namespace monitoring
+
+kind delete cluster --name tamlab
+
+
