@@ -1,0 +1,83 @@
+#Create cluster with kind:
+kind create cluster --name tamlab --config kind-config.yaml
+
+#View available clusters
+kind get clusters
+
+#Switch contexts commands
+kubectl config get-contexts
+kubectl config current-context
+kubectl config use-context kind-tamlab
+
+#or set explicitly in kubectl command
+kubectl --context kind-tamlab
+
+#demo Logging with EFK
+
+#deploy logging namespace
+cd logging
+kubectl apply -f namespace.yaml
+
+#deploy elasticsearch
+kubectl apply -f elasticsearch.yaml
+
+#wait for elasticsearch statefulset to come up - this will take several minutes
+kubectl -n logging get all,pv,pvc
+kubectl -n logging describe pod/es-cluster-0
+
+#deploy kibana
+kubectl apply -f kibana.yaml
+
+#deploy fluentd
+kubectl apply -f fluentd.yaml
+
+#access kibana
+kubectl -n logging port-forward pod/kibana-<suffix> 5601:5601
+open browser to http://localhost:5601
+follow prompts to create index pattern of "logstash-*"
+view log files
+
+>> describe what is cAdvisor
+
+cd ..
+#install cAdvisor
+kubectl apply -f cadvisor/cadvisor.yaml
+open browser to: http://localhost:31194/containers/
+
+#install Prometheus operator and Grafana
+#git clone the kube-prometheus code locally
+git clone https://github.com/prometheus-operator/kube-prometheus.git
+cd kube-prometheus
+
+#setup namespace and CRDs
+kubectl create -f manifests/setup
+
+>> review operator from last session
+
+#deploy prometheus operator
+kubectl create -f manifests
+
+kubectl -n monitoring get all,pv,pvc
+
+
+#explore Prometheus
+# open a new terminal windows
+kubectl -n monitoring port-forward pod/prometheus-k8s-0 9090
+open browser to http://localhost:9090
+look at metrics graphs
+look at alerts
+look at data sources
+
+#explore Grafana
+#open a new terminal window
+kubectl -n monitoring port-forward pod/grafana-<suffix> 3000
+open browser to http://localhost:3000
+login with admin and password admin
+
+>> you then create a new pwd (VMware1!)
+
+#follow instructions from here to import a new dashboard
+#also note the datasource config
+http://blog.marcnuri.com/prometheus-grafana-setup-minikube/
+
+also try 6336
