@@ -33,6 +33,10 @@ helm search repo stable
 #install a postgres db
 helm install mydb stable/postgresql
 
+helm list
+
+helm get notes mydb
+
 #note the postgres db that was installed
 kubectl get all
 
@@ -82,7 +86,7 @@ cd mySample
 helm show values stable/postgresql > myInputFile.yaml
 
 #edit the file and change the service port to 9950
-vi myInputFile.yaml
+vi myInputFile.yamlc
 #hint:  look under the heading "## PostgreSQL service configuration"
 
 #install with the new value file
@@ -129,6 +133,10 @@ kubectl create -f manifests
 #see what has been deployed
 kubectl -n monitoring get all
 kubectl -n monitoring get prometheus,alertmanager
+
+kubectl -n monitoring port-forward pod/grafana-<suffix<> 3000:3000
+
+import dashboard: 11802
 
 #clean up the env
 kubectl delete -f manifests
